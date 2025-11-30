@@ -3,394 +3,742 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3x3 Matrix Calculator</title>
+    <title>Matrice Bakery</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['monospace'],
-                    },
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        /* Custom styles for matrix input cells */
-        .matrix-cell {
-            width: 100%;
-            padding: 8px 4px;
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Dynamic Background for Liquid Look */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Liquid Gradient */
+            background: linear-gradient(-45deg, #1b3a5b, #001f3f, #3a0050, #000a20);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 1rem;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism/Liquid Glass Style */
+        .glass-panel {
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* Inputs styled for the aesthetic */
+        .matrix-input {
+            appearance: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
             text-align: center;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.5rem;
+            transition: border-color 0.2s, background-color 0.2s;
+            max-width: 100%;
+        }
+
+        .matrix-input:focus {
+            outline: none;
+            border-color: #4ade80; /* Tailwind green-400 */
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .matrix-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Style for the result cells */
+        .matrix-result, .scalar-result {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #4ade80; /* Highlight color (Green) for matrix cells */
+            font-weight: 700;
+            text-align: center;
+            border-radius: 8px;
+            padding: 0.5rem;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            overflow: hidden; /* Prevent text overflow in small cells */
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Button Styles with integrated shadow for depth */
+        .op-button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            border-radius: 0.75rem; /* rounded-xl */
+            transition: all 0.3s ease-in-out;
+            transform: translateZ(0);
             border: none;
-            background-color: #f3f4f6;
-            transition: background-color 0.15s;
+            cursor: pointer;
+            width: 100%;
         }
-        .matrix-cell:focus {
-            background-color: #e5e7eb;
-            outline: 2px solid #3b82f6; /* Blue outline on focus */
+
+        .op-button:hover {
+            transform: scale(1.03) translateY(-1px);
+            opacity: 0.9;
         }
-        /* Hide number input arrows (optional, for aesthetics) */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+
+        .op-add { background: #4ade80; color: #1f2937; box-shadow: 0 5px 15px rgba(74, 222, 128, 0.5); }
+        .op-subtract { background: #60a5fa; color: #1f2937; box-shadow: 0 5px 15px rgba(96, 165, 250, 0.5); }
+        .op-multiply { background: #a855f7; color: #1f2937; box-shadow: 0 5px 15px rgba(168, 85, 247, 0.5); }
+        .op-single { background: #22d3ee; color: #1f2937; box-shadow: 0 5px 15px rgba(34, 211, 238, 0.5); }
+        .op-clear { background: #f87171; color: white; box-shadow: 0 5px 15px rgba(248, 113, 113, 0.5); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 sm:p-8 font-sans">
+<body>
 
-    <div class="max-w-4xl mx-auto bg-white shadow-2xl rounded-xl p-6 md:p-10">
-
-        <!-- Title and Note -->
-        <h1 class="text-3xl font-extrabold text-gray-900 mb-2 border-b-4 border-indigo-500 pb-2">
-            3x3 Matrix Calculator
+    <div class="glass-panel max-w-4xl w-full p-6 sm:p-10 mx-auto">
+        <h1 class="text-3xl sm:text-4xl font-extrabold mb-6 text-center tracking-tighter">
+            Matrice Bakery
         </h1>
-        <p class="text-sm font-medium text-red-600 bg-red-100 p-2 rounded-lg mb-6 shadow-inner">
-            NOTE: This calculator works **ONLY** for 3x3 matrices.
-        </p>
 
-        <!-- Main Grid Layout for Matrices -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-
-            <!-- Matrix A Input -->
-            <div class="bg-indigo-50 p-6 rounded-xl shadow-lg border border-indigo-200">
-                <h2 class="text-xl font-semibold text-indigo-800 mb-4">Matrix A</h2>
-                <div class="grid grid-cols-3 gap-2" id="matrixA">
-                    <!-- Inputs for A[0][0] to A[2][2] will be generated here by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Matrix B Input -->
-            <div class="bg-purple-50 p-6 rounded-xl shadow-lg border border-purple-200">
-                <h2 class="text-xl font-semibold text-purple-800 mb-4">Matrix B</h2>
-                <div class="grid grid-cols-3 gap-2" id="matrixB">
-                    <!-- Inputs for B[0][0] to B[2][2] will be generated here by JavaScript -->
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Power Input and Operation Buttons -->
-        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-8">
+        <div class="space-y-6">
             
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <div class="flex items-center space-x-2">
-                    <label for="powerN" class="text-lg font-medium text-gray-700">Power (n) for A^n:</label>
-                    <input type="number" id="powerN" value="2" min="0" 
-                           class="w-20 p-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150">
+            <!-- 1. Operations Section (Always Visible) -->
+            <div class="glass-panel p-4">
+                <h2 class="text-xl font-semibold mb-4 text-center">Select Operation First</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button onclick="selectOperation('add')" class="op-button op-add text-sm">A + B</button>
+                    <button onclick="selectOperation('subtract')" class="op-button op-subtract text-sm">A - B</button>
+                    <button onclick="selectOperation('multiply')" class="op-button op-multiply text-sm">A × B</button>
+                    <button onclick="selectOperation('transpose')" class="op-button op-single text-sm">A<sup class="font-bold">T</sup></button>
                 </div>
-                <div id="error-message" class="text-red-500 font-semibold hidden"></div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                    <button onclick="selectOperation('determinant')" class="op-button op-single text-sm">Det(A)</button>
+                    <button onclick="selectOperation('inverse')" class="op-button op-single text-sm">A<sup class="font-bold">-1</sup></button>
+                    <button onclick="selectOperation('scalarMultiply')" class="op-button op-add text-sm sm:col-span-2">k × A</button> <!-- NEW SCALAR BUTTON -->
+                </div>
+            </div>
+            
+            <!-- Message Box -->
+            <div id="message-box" class="glass-panel p-3 text-sm text-center font-semibold transition duration-300 hidden">
+                <!-- Messages go here -->
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button onclick="calculate('add')" class="op-button bg-green-500 hover:bg-green-600">
-                    A + B (Add)
-                </button>
-                <button onclick="calculate('subtract')" class="op-button bg-yellow-500 hover:bg-yellow-600">
-                    A - B (Subtract)
-                </button>
-                <button onclick="calculate('multiply')" class="op-button bg-blue-500 hover:bg-blue-600">
-                    A × B (Multiply)
-                </button>
-                <button onclick="calculate('power')" class="op-button bg-red-500 hover:bg-red-600">
-                    A^n (Power)
-                </button>
-            </div>
+
+            <!-- 2. Main Content Area (Hidden until operation selected) -->
+            <div id="mainContent" class="space-y-6 hidden">
+            
+                <!-- Dimension Control -->
+                <div class="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+                    <label for="matrixSize" class="text-lg font-medium whitespace-nowrap">Matrix Size (N×N):</label>
+                    <div class="flex space-x-2 w-full sm:w-auto">
+                        <input type="number" id="matrixSize" class="matrix-input w-20 text-lg font-bold" min="2" max="5" value="3" onchange="updateMatrixDimension(true)">
+                        <button onclick="updateMatrixDimension(true)" class="op-button op-single w-full sm:w-auto !py-2">Update Size</button>
+                    </div>
+                </div>
+
+                <!-- Matrix Inputs Section -->
+                <div id="matrixInputSection" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- NEW SCALAR K INPUT CARD -->
+                    <div id="scalarKCard" class="glass-panel p-4 flex flex-col items-center justify-center hidden">
+                        <h2 class="text-xl font-semibold mb-3">Scalar (k)</h2>
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <label for="scalarK" class="text-2xl font-bold mb-2">k =</label>
+                            <input type="number" id="scalarK" class="matrix-input text-4xl font-extrabold w-32 py-4" value="2" onchange="calculate(true)">
+                        </div>
+                    </div>
+                    <!-- END NEW SCALAR K INPUT CARD -->
+
+                    <!-- Matrix A (Always present when this section is shown) -->
+                    <div id="matrixACard" class="glass-panel p-4">
+                        <h2 class="text-xl font-semibold mb-3" id="matrixALabel">Matrix A (N×N)</h2>
+                        <div id="matrixAContainer" class="grid gap-3">
+                            <!-- Dynamic inputs injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Matrix B (Only visible for binary operations) -->
+                    <div id="matrixBCard" class="glass-panel p-4 hidden">
+                        <h2 class="text-xl font-semibold mb-3" id="matrixBLabel">Matrix B (N×N)</h2>
+                        <div id="matrixBContainer" class="grid gap-3">
+                            <!-- Dynamic inputs injected here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calculation Trigger -->
+                <div class="flex justify-center">
+                    <!-- Button to trigger calculation based on selected operation -->
+                    <button onclick="calculate()" id="calculateButton" class="op-button op-multiply text-lg w-full max-w-md">
+                        Calculate Result
+                    </button>
+                </div>
+
+
+                <!-- Result Section -->
+                <div class="glass-panel p-4">
+                    <h2 class="text-xl font-semibold mb-3 flex justify-between items-center">
+                        <span id="resultMatrixLabel">Result Matrix (R)</span>
+                        <!-- Determinant Result Panel -->
+                        <div class="text-base font-normal flex items-center space-x-2">
+                            <span class="text-gray-300">Det(A):</span>
+                            <!-- Set initial determinant display to 0 -->
+                            <div id="detResult" class="scalar-result px-3 py-1 w-28 text-cyan-400">0</div>
+                        </div>
+                    </h2>
+                    <div id="matrixRContainer" class="grid gap-3">
+                        <!-- Dynamic results injected here -->
+                    </div>
+                </div>
+            
+                <!-- Global Actions -->
+                <div class="flex justify-center pt-2">
+                    <button onclick="clearAll()" class="op-button op-clear text-lg w-full max-w-md">
+                        Start New Calculation
+                    </button>
+                </div>
+            </div> <!-- End of mainContent -->
         </div>
 
-        <!-- Result Display Area -->
-        <div class="bg-gray-800 text-white p-6 rounded-xl shadow-2xl">
-            <h2 class="text-2xl font-bold mb-4 text-center text-gray-100" id="resultTitle">Result (Matrix C)</h2>
-            <div id="resultMatrix" class="grid grid-cols-3 gap-2 p-4 bg-gray-900 rounded-lg max-w-xs mx-auto text-xl font-mono shadow-inner">
-                <!-- Result cells will be populated here -->
-            </div>
-            <p class="mt-4 text-sm text-center text-gray-400" id="resultOpDescription">
-                Select an operation above to view the result.
-            </p>
+        <!-- Subtle Attribution -->
+        <div class="mt-8 pt-4 border-t border-white/10 text-center text-xs text-gray-400">
+            Created by Anant | Email: anant5678910@gmail.com
         </div>
-
+        
     </div>
 
     <script>
-        // --- JAVASCRIPT LOGIC ---
+        // Global variable for matrix size and current operation
+        var N = 3; 
+        var currentOperation = null; // Stores the currently selected operation
 
-        const SIZE = 3;
+        // --- Utility Functions ---
 
-        // --- DOM GENERATION AND INITIALIZATION ---
+        // Utility function to get the numeric value of an input element
+        function getVal(id) {
+            const element = document.getElementById(id);
+            if (!element) return null; 
+            const value = parseFloat(element.value);
+            return isNaN(value) ? null : value;
+        }
 
-        function generateMatrixInputs(matrixId) {
-            const container = document.getElementById(matrixId);
+        // Utility function to set the text content of a matrix result element
+        function setMatrixVal(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                // Apply 8 decimal places (for precision), then remove unnecessary trailing zeros and decimal point
+                element.textContent = parseFloat(value.toFixed(8)).toString(); 
+            }
+        }
+
+        // Utility function to set the text content of a scalar result element
+        function setScalarVal(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                // Apply 8 decimal places (for precision), then remove unnecessary trailing zeros and decimal point
+                element.textContent = parseFloat(value.toFixed(8)).toString(); 
+            }
+        }
+        
+        // Read scalar K value
+        function readScalarK() {
+            return getVal('scalarK');
+        }
+
+        // Function to display messages (instead of alert)
+        function showMessage(message, type = 'error') {
+            const box = document.getElementById('message-box');
+            box.textContent = message;
+            box.className = 'glass-panel p-3 text-sm text-center font-semibold transition duration-300';
+            box.classList.add('block');
+            
+            if (type === 'error') {
+                box.classList.add('bg-red-500/20', 'text-red-300', 'border-red-500/40');
+            } else if (type === 'success') {
+                box.classList.add('bg-green-500/20', 'text-green-300', 'border-green-500/40');
+            }
+            
+            setTimeout(() => {
+                box.classList.remove('block');
+                box.classList.add('hidden');
+            }, 3000);
+        }
+
+        // --- DOM Generation Functions ---
+        
+        // Helper to generate the input grid
+        function generateMatrixInputs(containerId, N, prefix) {
+            const container = document.getElementById(containerId);
             container.innerHTML = '';
-            for (let i = 0; i < SIZE; i++) {
-                for (let j = 0; j < SIZE; j++) {
+            
+            // Set up the grid style dynamically
+            container.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
                     const input = document.createElement('input');
                     input.type = 'number';
-                    input.id = `${matrixId}-${i}-${j}`;
-                    input.value = (i === j) ? 1 : 0; // Default to identity matrix for easy testing
-                    // Added a class for easier selection
-                    input.className = 'matrix-cell rounded-md focus:ring-blue-500 focus:border-blue-500 text-lg';
+                    input.id = `${prefix}${i}${j}`;
+                    input.className = 'matrix-input';
+                    input.placeholder = `${prefix.toUpperCase()}[${i+1},${j+1}]`;
+                    
+                    // Set default values: Identity for A, simple values for B
+                    if (prefix === 'a') {
+                        input.value = (i === j) ? 1 : 0; 
+                    } else if (prefix === 'b') {
+                         input.value = (i === j) ? 2 : 1;
+                    }
+
                     container.appendChild(input);
                 }
             }
         }
 
-        // Initialize inputs on load
-        document.addEventListener('DOMContentLoaded', () => {
-            generateMatrixInputs('matrixA');
-            generateMatrixInputs('matrixB');
-            // Initialize result matrix display
-            const resultContainer = document.getElementById('resultMatrix');
-            for (let i = 0; i < SIZE; i++) {
-                for (let j = 0; j < SIZE; j++) {
+        // Helper to generate the result grid
+        function updateResultMatrixDisplay(N) {
+            const container = document.getElementById('matrixRContainer');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+            
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
                     const div = document.createElement('div');
-                    div.id = `result-${i}-${j}`;
-                    div.className = 'bg-gray-700 p-2 rounded-md text-center text-gray-50';
-                    div.textContent = '0';
-                    resultContainer.appendChild(div);
+                    div.id = `r${i}${j}`;
+                    div.className = 'matrix-result';
+                    // Initialize with 0
+                    div.textContent = '0'; 
+                    container.appendChild(div);
                 }
             }
+        }
 
-            // Apply Tailwind styles to buttons after generation
-            document.querySelectorAll('.op-button').forEach(button => {
-                button.className += ' text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition duration-150 hover:scale-[1.02] active:scale-[0.98]';
-            });
-
-            // --- NEW LOGIC FOR ENTER KEY NAVIGATION ---
-            const orderedInputs = [];
+        // Helper to update the Result Matrix Label based on the operation
+        function updateResultLabel(operation) {
+            const label = document.getElementById('resultMatrixLabel');
+            switch (operation) {
+                case 'add':
+                    label.textContent = 'Result Matrix (A + B)';
+                    break;
+                case 'subtract':
+                    label.textContent = 'Result Matrix (A - B)';
+                    break;
+                case 'multiply':
+                    label.textContent = 'Result Matrix (A × B)';
+                    break;
+                case 'transpose':
+                    label.textContent = 'Result Matrix (Aᵀ)';
+                    break;
+                case 'inverse':
+                    label.textContent = 'Result Matrix (A⁻¹)';
+                    break;
+                case 'scalarMultiply':
+                    const kVal = readScalarK() !== null ? readScalarK() : 'k';
+                    label.textContent = `Result Matrix (${kVal} × A)`;
+                    break;
+                default:
+                    label.textContent = 'Result Matrix (R)';
+                    break;
+            }
+        }
+        
+        // Function called when an operation button is clicked
+        function selectOperation(operation) {
+            currentOperation = operation;
+            const mainContent = document.getElementById('mainContent');
+            const matrixInputSection = document.getElementById('matrixInputSection');
+            const matrixBCard = document.getElementById('matrixBCard');
+            const scalarKCard = document.getElementById('scalarKCard');
+            const calculateButton = document.getElementById('calculateButton');
             
-            // 1. Order Matrix A (row by row: 0,0 -> 0,1 -> ... -> 2,2)
-            for (let i = 0; i < SIZE; i++) {
-                for (let j = 0; j < SIZE; j++) {
-                    orderedInputs.push(document.getElementById(`matrixA-${i}-${j}`));
-                }
+            // 1. Show main content area
+            mainContent.classList.remove('hidden');
+
+            // 2. Determine required inputs
+            const requiresB = ['add', 'subtract', 'multiply'].includes(operation);
+            const requiresScalar = operation === 'scalarMultiply';
+
+            // Reset layout classes
+            matrixInputSection.classList.remove('md:grid-cols-1', 'md:grid-cols-2');
+            
+            if (requiresB) {
+                // Binary operations: Matrix A and B shown (2 columns)
+                matrixBCard.classList.remove('hidden');
+                scalarKCard.classList.add('hidden');
+                matrixInputSection.classList.add('md:grid-cols-2');
+                calculateButton.textContent = `Calculate ${operation.charAt(0).toUpperCase() + operation.slice(1)} (A ${operation === 'multiply' ? '×' : (operation === 'add' ? '+' : '-')} B)`;
+            } else if (requiresScalar) {
+                 // Scalar operation: Scalar K and Matrix A shown (2 columns)
+                matrixBCard.classList.add('hidden');
+                scalarKCard.classList.remove('hidden');
+                matrixInputSection.classList.add('md:grid-cols-2');
+                calculateButton.textContent = `Calculate Scalar Multiply (k × A)`;
+            } else {
+                // Unary operations (Transpose, Determinant, Inverse): Only Matrix A shown (1 column)
+                matrixBCard.classList.add('hidden');
+                scalarKCard.classList.add('hidden');
+                matrixInputSection.classList.add('md:grid-cols-1');
+                calculateButton.textContent = `Calculate ${operation.charAt(0).toUpperCase() + operation.slice(1)} (A)`;
             }
             
-            // 2. Order Matrix B (row by row)
-            for (let i = 0; i < SIZE; i++) {
-                for (let j = 0; j < SIZE; j++) {
-                    orderedInputs.push(document.getElementById(`matrixB-${i}-${j}`));
-                }
+            // 3. Update the result label
+            updateResultLabel(operation);
+
+            // 4. Update the matrix dimension (which generates the grids and triggers initial calc)
+            const sizeInput = document.getElementById('matrixSize');
+            sizeInput.value = N;
+            updateMatrixDimension(false); // Generate matrices based on current N
+            
+            showMessage(`Operation selected: ${operation.toUpperCase()}. Now set the matrix size and values below.`, 'success');
+        }
+
+
+        // Function called when the dimension input changes or operation is selected
+        // showMessage: If true, shows dimension change message. If false, it's a silent call from selectOperation.
+        function updateMatrixDimension(showSuccessMessage = true) {
+            const sizeInput = document.getElementById('matrixSize');
+            const newSize = parseInt(sizeInput.value);
+
+            if (isNaN(newSize) || newSize < 2 || newSize > 5) {
+                showMessage('Matrix size must be an integer between 2 and 5.', 'error');
+                sizeInput.value = N; // Revert to old size
+                return;
             }
+            
+            // Only update N if it actually changed
+            const dimensionChanged = N !== newSize;
+            N = newSize;
 
-            // 3. Order Power N input
-            orderedInputs.push(document.getElementById('powerN'));
+            // Generate Matrix A (always required)
+            generateMatrixInputs('matrixAContainer', N, 'a');
 
-            // Add keydown listener to the document
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    const activeElement = document.activeElement;
-                    // Ensure the active element is a managed input (matrix cell or power input)
-                    const currentIndex = orderedInputs.indexOf(activeElement);
-                    
-                    if (currentIndex !== -1) {
-                        event.preventDefault(); // Prevent default browser behavior (e.g., button click)
-                        
-                        let nextIndex = currentIndex + 1;
-                        
-                        if (nextIndex < orderedInputs.length) {
-                            // Move focus to the next input element
-                            const nextInput = orderedInputs[nextIndex];
-                            nextInput.focus();
-                            nextInput.select(); // Highlight the text for easy overwriting
-                        } else {
-                            // If user presses Enter on the last input (#powerN), automatically trigger the Power calculation
-                            calculate('power'); 
-                            activeElement.blur();
-                        }
-                    }
-                }
-            });
-            // --- END NEW LOGIC ---
-        });
+            // Check if Matrix B is required based on currentOperation
+            const requiresB = ['add', 'subtract', 'multiply'].includes(currentOperation);
+            if (requiresB) {
+                generateMatrixInputs('matrixBContainer', N, 'b');
+            } else {
+                // Clear Matrix B container if it was previously generated but not needed now
+                document.getElementById('matrixBContainer').innerHTML = '';
+            }
+            
+            // Generate result display
+            updateResultMatrixDisplay(N);
+            setScalarVal('detResult', 0);
 
-        // --- UTILITY FUNCTIONS ---
+            // Trigger initial calculation (e.g., to show Det(A) or initial scalar multiply result)
+            if (currentOperation) {
+                calculate(true); // 'true' means silent run, just to update displays
+            }
+            
+            if (showSuccessMessage && dimensionChanged) {
+                 showMessage(`Matrix size updated to ${N}x${N}.`, 'success');
+            }
+        }
 
-        /**
-         * Reads the 3x3 matrix values from the HTML inputs.
-         * @param {string} matrixId - 'matrixA' or 'matrixB'.
-         * @returns {number[][]} The 3x3 matrix as a 2D array.
-         */
-        function getMatrix(matrixId) {
+        // --- Matrix Core Logic (Math functions) ---
+
+        // Read the current matrix values from the DOM
+        function readMatrix(prefix, N) {
             const matrix = [];
-            for (let i = 0; i < SIZE; i++) {
-                matrix[i] = [];
-                for (let j = 0; j < SIZE; j++) {
-                    const inputElement = document.getElementById(`${matrixId}-${i}-${j}`);
-                    // Use parseInt and handle potential empty/NaN input by defaulting to 0
-                    matrix[i][j] = parseInt(inputElement.value || '0', 10);
+            for (let i = 0; i < N; i++) {
+                const row = [];
+                for (let j = 0; j < N; j++) {
+                    const val = getVal(`${prefix}${i}${j}`);
+                    if (val === null) return null; // Validation failure
+                    row.push(val);
                 }
+                matrix.push(row);
             }
             return matrix;
         }
-
-        /**
-         * Displays the resulting matrix in the output area.
-         * @param {number[][]} matrix - The 3x3 result matrix.
-         */
-        function displayResult(matrix) {
-            for (let i = 0; i < SIZE; i++) {
-                for (let j = 0; j < SIZE; j++) {
-                    const resultElement = document.getElementById(`result-${i}-${j}`);
-                    resultElement.textContent = matrix[i][j];
+        
+        // Display the calculated result matrix
+        function updateResultMatrix(matrix, N) {
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    const elementId = `r${i}${j}`;
+                    setMatrixVal(elementId, matrix[i][j]);
                 }
             }
         }
 
-        /**
-         * Shows a temporary error message.
-         * @param {string} message - The error text.
-         */
-        function displayError(message) {
-            const errorElement = document.getElementById('error-message');
-            errorElement.textContent = `❌ ${message}`;
-            errorElement.classList.remove('hidden');
-            setTimeout(() => {
-                errorElement.classList.add('hidden');
-            }, 4000);
-        }
-
-        // --- CORE MATRIX OPERATIONS (Translated from Java) ---
-
-        /**
-         * Adds two 3x3 matrices. C = A + B
-         */
-        function addMatrices(a, b) {
-            const c = [];
-            for (let i = 0; i < SIZE; i++) {
-                c[i] = [];
-                for (let j = 0; j < SIZE; j++) {
-                    c[i][j] = a[i][j] + b[i][j];
+        // N x N Matrix Addition/Subtraction
+        function matrixAddSubtract(A, B, operation) {
+            const R = Array.from({ length: N }, () => Array(N).fill(0));
+            const factor = operation === 'add' ? 1 : -1;
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    R[i][j] = A[i][j] + (factor * B[i][j]);
                 }
             }
-            return c;
+            return R;
         }
 
-        /**
-         * Subtracts two 3x3 matrices. C = A - B
-         */
-        function subtractMatrices(a, b) {
-            const c = [];
-            for (let i = 0; i < SIZE; i++) {
-                c[i] = [];
-                for (let j = 0; j < SIZE; j++) {
-                    c[i][j] = a[i][j] - b[i][j];
-                }
-            }
-            return c;
-        }
-
-        /**
-         * Multiplies two 3x3 matrices. C = A x B
-         */
-        function multiplyMatrices(a, b) {
-            const c = [];
-            for (let i = 0; i < SIZE; i++) {
-                c[i] = [];
-                for (let j = 0; j < SIZE; j++) {
+        // N x N Matrix Multiplication
+        function matrixMultiply(A, B) {
+            const R = Array.from({ length: N }, () => Array(N).fill(0));
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
                     let sum = 0;
-                    for (let k = 0; k < SIZE; k++) {
-                        sum += a[i][k] * b[k][j];
+                    for (let k = 0; k < N; k++) {
+                        sum += A[i][k] * B[k][j];
                     }
-                    c[i][j] = sum;
+                    R[i][j] = sum;
                 }
             }
-            return c;
+            return R;
+        }
+        
+        // N x N Matrix Scalar Multiplication (NEW FUNCTION)
+        function matrixScalarMultiply(A, k) {
+            const R = Array.from({ length: N }, () => Array(N).fill(0));
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    R[i][j] = A[i][j] * k;
+                }
+            }
+            return R;
         }
 
-        /**
-         * Calculates A^n using repeated multiplication.
-         * @param {number[][]} a - The base matrix.
-         * @param {number} n - The power.
-         */
-        function powerMatrix(a, n) {
-            // Identity matrix
-            const identity = Array(SIZE).fill(0).map((_, i) => 
-                Array(SIZE).fill(0).map((_, j) => (i === j ? 1 : 0))
-            );
-
-            if (n === 0) {
-                return identity;
+        // N x N Matrix Transpose
+        function matrixTranspose(A) {
+            const R = Array.from({ length: N }, () => Array(N).fill(0));
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    R[i][j] = A[j][i];
+                }
             }
-            if (n === 1) {
-                // Return a copy of A
-                return a.map(row => [...row]); 
-            }
+            return R;
+        }
+        
+        // Recursive Determinant (Cofactor Expansion)
+        function determinant(matrix, n) {
+            if (n === 1) return matrix[0][0];
+            if (n === 2) return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
 
-            let result = a.map(row => [...row]); // Start with A^1
+            let det = 0;
             
-            // Perform multiplication (n - 1) times
-            for (let p = 1; p < n; p++) {
-                result = multiplyMatrices(result, a);
+            // Iterate over the first row
+            for (let j = 0; j < n; j++) {
+                const minor = [];
+                for (let row = 1; row < n; row++) {
+                    const newRow = [];
+                    for (let col = 0; col < n; col++) {
+                        if (col !== j) {
+                            newRow.push(matrix[row][col]);
+                        }
+                    }
+                    minor.push(newRow);
+                }
+
+                // Cofactor: C(0, j) = (-1)^(0+j) * det(Minor(0, j))
+                const sign = (j % 2 === 0) ? 1 : -1;
+                det += sign * matrix[0][j] * determinant(minor, n - 1);
             }
-            return result;
+
+            return det;
         }
 
-        // --- MAIN CALCULATE FUNCTION ---
+        // N x N Inverse (using Adjugate/Adjoint Matrix)
+        function inverse(A, n) {
+            const detA = determinant(A, n);
 
-        function calculate(operation) {
+            if (Math.abs(detA) < 1e-9) return null; // Singular matrix
+
+            if (n === 1) return [[1 / A[0][0]]];
+            
+            const adjugate = Array.from({ length: n }, () => Array(n).fill(0));
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    // Find Minor M(i, j)
+                    const minorMatrix = [];
+                    for (let row = 0; row < n; row++) {
+                        if (row !== i) {
+                            const newRow = [];
+                            for (let col = 0; col < n; col++) {
+                                if (col !== j) {
+                                    newRow.push(A[row][col]);
+                                }
+                            }
+                            minorMatrix.push(newRow);
+                        }
+                    }
+
+                    // Cofactor C(i, j) = (-1)^(i+j) * det(M(i, j))
+                    const sign = ((i + j) % 2 === 0) ? 1 : -1;
+                    const cofactor = sign * determinant(minorMatrix, n - 1);
+
+                    // Adjugate[j][i] = Cofactor[i][j] (Note the transpose)
+                    adjugate[j][i] = cofactor;
+                }
+            }
+
+            // Inverse = (1/detA) * Adjugate
+            const R = Array.from({ length: n }, () => Array(n).fill(0));
+            const invDet = 1 / detA;
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    R[i][j] = adjugate[i][j] * invDet;
+                }
+            }
+            return R;
+        }
+
+        // --- Main Calculation Function ---
+        // 'isSilent' is a flag for internal calls (like from updateMatrixDimension)
+        function calculate(isSilent = false) {
+            if (!currentOperation) {
+                if (!isSilent) showMessage('Please select an operation first!', 'error');
+                return;
+            }
+
+            // Reset determinant display first
+            document.getElementById('detResult').textContent = '0';
+            
+            // Read matrices based on current N
+            const matrixA = readMatrix('a', N);
+            
+            const requiresB = ['add', 'subtract', 'multiply'].includes(currentOperation);
+            let matrixB = null;
+            if (requiresB) {
+                 matrixB = readMatrix('b', N);
+            }
+            
+            // Determine required matrices for validation
+            const matrixToValidate = requiresB ? (matrixA === null || matrixB === null ? null : [matrixA, matrixB]) : matrixA;
+
+            if (matrixToValidate === null || (Array.isArray(matrixToValidate) && matrixToValidate.some(m => m === null))) {
+                if (!isSilent) showMessage('Please fill in ALL necessary cells with valid numbers.', 'error');
+                return;
+            }
+
+            let resultMatrix = null;
+            let successMessage = '';
+
             try {
-                const matrixA = getMatrix('matrixA');
-                let matrixB = null;
-                let result = null;
-                let title = '';
-                let description = '';
-
-                switch (operation) {
+                // Calculate determinant regardless of operation for display/check
+                const detA = determinant(matrixA, N);
+                setScalarVal('detResult', detA);
+                
+                // Update the result label based on the operation
+                updateResultLabel(currentOperation);
+                
+                switch (currentOperation) {
                     case 'add':
-                        matrixB = getMatrix('matrixB');
-                        result = addMatrices(matrixA, matrixB);
-                        title = 'Matrix A + B';
-                        description = 'The sum of the two matrices.';
+                        resultMatrix = matrixAddSubtract(matrixA, matrixB, 'add');
+                        successMessage = `Matrix Addition (A + B) successful for ${N}x${N} matrices!`;
                         break;
-                    case 'subtract':
-                        matrixB = getMatrix('matrixB');
-                        result = subtractMatrices(matrixA, matrixB);
-                        title = 'Matrix A - B';
-                        description = 'The difference between Matrix A and Matrix B.';
-                        break;
-                    case 'multiply':
-                        matrixB = getMatrix('matrixB');
-                        result = multiplyMatrices(matrixA, matrixB);
-                        title = 'Matrix A × B';
-                        description = 'The product of Matrix A and Matrix B.';
-                        break;
-                    case 'power':
-                        const nInput = document.getElementById('powerN');
-                        const n = parseInt(nInput.value || '0', 10);
                         
-                        if (isNaN(n) || n < 0) {
-                            throw new Error("Invalid power value. Please enter an integer $\\ge 0$.");
+                    case 'subtract':
+                        resultMatrix = matrixAddSubtract(matrixA, matrixB, 'subtract');
+                        successMessage = `Matrix Subtraction (A - B) successful for ${N}x${N} matrices!`;
+                        break;
+                        
+                    case 'multiply':
+                        resultMatrix = matrixMultiply(matrixA, matrixB);
+                        successMessage = `Matrix Multiplication (A × B) successful for ${N}x${N} matrices!`;
+                        break;
+
+                    case 'transpose':
+                        resultMatrix = matrixTranspose(matrixA);
+                        successMessage = `Matrix Transpose (Aᵀ) calculated for ${N}x${N}.`;
+                        break;
+
+                    case 'determinant':
+                        // Result is scalar, matrix display should be filled with zeros
+                        updateResultMatrix(Array.from({ length: N }, () => Array(N).fill(0)), N);
+                        // The scalar value is already set by setScalarVal('detResult', detA);
+                        if (!isSilent) showMessage(`Determinant calculated: ${document.getElementById('detResult').textContent}. The matrix result area is not used for this scalar value.`, 'success');
+                        return; // Exit as result is already displayed
+                        
+                    case 'inverse':
+                        resultMatrix = inverse(matrixA, N);
+                        if (resultMatrix === null) {
+                            // Clear result matrix and show error
+                            updateResultMatrix(Array.from({ length: N }, () => Array(N).fill(0)), N);
+                            if (!isSilent) showMessage(`Cannot calculate Inverse (A⁻¹): Matrix is singular (Det = ${document.getElementById('detResult').textContent}).`, 'error');
+                            return;
+                        }
+                        successMessage = `Matrix Inverse (A⁻¹) calculated for ${N}x${N}.`;
+                        break;
+                        
+                    case 'scalarMultiply':
+                        const scalarK = readScalarK();
+                        if (scalarK === null) {
+                            if (!isSilent) showMessage('Please enter a valid scalar value (k).', 'error');
+                            updateResultLabel(currentOperation); // Update label just in case
+                            return;
                         }
                         
-                        result = powerMatrix(matrixA, n);
-                        title = `Matrix A ^ ${n}`;
-                        description = `Matrix A multiplied by itself ${n} times.`;
+                        resultMatrix = matrixScalarMultiply(matrixA, scalarK);
+                        // Update the result label with the new k value
+                        updateResultLabel(currentOperation); 
+                        successMessage = `Scalar Multiplication (${scalarK} × A) successful for ${N}x${N} matrix!`;
                         break;
+                        
                     default:
-                        throw new Error("Invalid operation selected.");
+                        if (!isSilent) showMessage('Invalid operation requested.', 'error');
+                        return;
                 }
+                
+                // Display Matrix Result
+                if (resultMatrix) {
+                    updateResultMatrix(resultMatrix, N);
+                }
+                
+                if (!isSilent) showMessage(successMessage, 'success');
 
-                // Display result and update titles
-                displayResult(result);
-                document.getElementById('resultTitle').textContent = `${title} Result`;
-                document.getElementById('resultOpDescription').textContent = description;
-
-            } catch (error) {
-                console.error(error);
-                displayError(error.message);
-                // Clear the result area on error
-                displayResult(Array(SIZE).fill(0).map(() => Array(SIZE).fill(0)));
-                document.getElementById('resultTitle').textContent = 'Error!';
-                document.getElementById('resultOpDescription').textContent = 'Please check your inputs and try again.';
+            } catch (e) {
+                console.error("Calculation Error:", e);
+                if (!isSilent) showMessage('An unexpected calculation error occurred. Check console for details.', 'error');
             }
         }
-
+        
+        // Function to clear all inputs and reset results
+        function clearAll() {
+            // 1. Clear state
+            currentOperation = null;
+            
+            // 2. Clear inputs visually
+            const inputs = document.querySelectorAll('.matrix-input');
+            inputs.forEach(input => input.value = '');
+            
+            // 3. Hide sections
+            document.getElementById('mainContent').classList.add('hidden');
+            
+            // 4. Reset Matrix Result and Det
+            updateResultMatrix(Array.from({ length: N }, () => Array(N).fill(0)), N);
+            setScalarVal('detResult', 0);
+            updateResultLabel(''); // Reset to default "Result Matrix (R)"
+            
+            showMessage('Start New Calculation: Operation, inputs, and results cleared!', 'success');
+        }
+        
+        // Initial setup on window load
+        window.onload = () => {
+             // Hide the main content initially and wait for the user to select an operation
+             document.getElementById('mainContent').classList.add('hidden');
+        };
     </script>
 </body>
 </html>
